@@ -1,8 +1,9 @@
+import 'dart:convert';
+
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_fcm_auth/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 const String BASIC_CHANNEL = "BASIC";
@@ -56,6 +57,29 @@ class FirebaseService {
     } catch (e) {}
   }
 
+  void listenNotification() {
+    if (GetPlatform.isIOS) {
+      firebaseMessaging.getInitialMessage().then((message) {
+        if (message != null) _onMessageOpenApp(message.data);
+      });
+      //
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _onMessageOpenApp(message.data);
+      });
+    } else {
+      AwesomeNotifications().setListeners(
+        onActionReceivedMethod: onAndroidMessageOpenApp,
+      );
+    }
+
+    FirebaseMessaging.onMessage.listen(
+      (RemoteMessage message) {
+        // logic show foreground AppNotification(message);
+        showInAppNotification(message);
+      },
+    );
+  }
+
   static Future<void> onReceiveMessage(RemoteMessage message) async {
     if (GetPlatform.isAndroid) {
       try {
@@ -70,5 +94,25 @@ class FirebaseService {
         }
       } catch (e) {}
     }
+  }
+
+  static void _onMessageOpenApp(Map<String, dynamic> data) {
+    print(data);
+  }
+
+  @pragma('vm:entry-point')
+  static Future<void> onAndroidMessageOpenApp(
+      ReceivedAction receivedAction) async {
+    print(receivedAction.payload!["payload"]!);
+  }
+
+  void showInAppNotification(RemoteMessage message) {
+    //check logic show noti in app
+    //show noti by snackbar, alert...
+  }
+
+  //logout
+  Future<void> unSubscribeDeviceToken() async {
+    firebaseMessaging.deleteToken();
   }
 }
